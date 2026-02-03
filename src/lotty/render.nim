@@ -107,11 +107,11 @@ proc renderEllipseGroup(
 
   for item in group.it:
     case item.ty
-    of "el":
+    of lstEllipse:
       ellipses.add item
-    of "fl":
+    of lstFill:
       fillOpt = some(item)
-    of "tr":
+    of lstTransform:
       transformOpt = some(item)
     else:
       discard
@@ -209,7 +209,7 @@ proc renderLottieFrame*(renderer: var LottieMtsdfRenderer, frame: float32): Rend
 
     let layerTransform = resolvedTransform(layer.ks, frame)
     for shape in layer.shapes:
-      if shape.ty == "gr":
+      if shape.ty == lstGroup:
         renderEllipseGroup(
           list,
           rootIdx,

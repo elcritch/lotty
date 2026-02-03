@@ -3,6 +3,13 @@ import std/options
 import pkg/jsony
 
 type
+  LottieShapeType* = enum
+    lstUnknown
+    lstGroup
+    lstEllipse
+    lstFill
+    lstTransform
+
   LottieAnimKind* = enum
     lakStatic = 0
     lakAnimated = 1
@@ -36,33 +43,21 @@ type
     sa*: Option[LottieProperty[float32]]
 
   LottieShape* = object
-    ty*: string
     nm*: string
     p*: Option[LottieProperty[seq[float32]]]
     s*: Option[LottieProperty[seq[float32]]]
     c*: Option[LottieProperty[seq[float32]]]
     o*: Option[LottieProperty[float32]]
-    fillRule*: Option[int]
     np*: Option[float32]
     it*: seq[LottieShape]
     a*: Option[LottieProperty[seq[float32]]]
-    r*: Option[LottieProperty[float32]]
     sk*: Option[LottieProperty[float32]]
     sa*: Option[LottieProperty[float32]]
-
-  LottieShapeWire = object
-    ty*: string
-    nm*: string
-    p*: Option[LottieProperty[seq[float32]]]
-    s*: Option[LottieProperty[seq[float32]]]
-    c*: Option[LottieProperty[seq[float32]]]
-    o*: Option[LottieProperty[float32]]
-    np*: Option[float32]
-    it*: Option[seq[LottieShape]]
-    a*: Option[LottieProperty[seq[float32]]]
-    r*: Option[RawJson]
-    sk*: Option[LottieProperty[float32]]
-    sa*: Option[LottieProperty[float32]]
+    case ty*: LottieShapeType
+    of lstFill:
+      fillRule*: Option[int]
+    else:
+      r*: Option[LottieProperty[float32]]
 
   LottieLayer* = object
     ty*: int
@@ -92,26 +87,21 @@ proc renameHook*[T](v: var LottieProperty[T], key: var string) =
     else:
       key = "kValue"
 
-proc parseHook*(s: string, i: var int, v: var LottieShape) =
-  var wire: LottieShapeWire
-  parseHook(s, i, wire)
-  v = default(LottieShape)
-  v.ty = wire.ty
-  v.nm = wire.nm
-  v.p = wire.p
-  v.s = wire.s
-  v.c = wire.c
-  v.o = wire.o
-  v.a = wire.a
-  v.sk = wire.sk
-  v.sa = wire.sa
-  if wire.np.isSome:
-    v.np = wire.np
-  if wire.it.isSome:
-    v.it = wire.it.get
-  if wire.r.isSome:
-    let raw = string(wire.r.get)
-    if v.ty == "fl":
-      v.fillRule = some(jsony.fromJson(raw, int))
-    else:
-      v.r = some(jsony.fromJson(raw, LottieProperty[float32]))
+proc renameHook*(v: var LottieShape, key: var string) =
+  if key == "r" and v.ty == lstFill:
+    key = "fillRule"
+
+proc parseHook*(s: string, i: var int, v: var LottieShapeType) =
+  var raw: string
+  parseHook(s, i, raw)
+  case raw
+  of "gr":
+    v = lstGroup
+  of "el":
+    v = lstEllipse
+  of "fl":
+    v = lstFill
+  of "tr":
+    v = lstTransform
+  else:
+    v = lstUnknown
