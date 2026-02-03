@@ -156,7 +156,7 @@ proc shapePathData(
         let angle = rotation + (i.float32 * 2.0'f32 * PI / points.float32)
         let pt = vec2(
           localCenter.x + sin(angle) * outerRadius,
-          localCenter.y - cos(angle) * outerRadius,
+          localCenter.y + cos(angle) * outerRadius,
         )
         if i == 0:
           path.moveTo(pt)
@@ -169,7 +169,7 @@ proc shapePathData(
         let radius = if i mod 2 == 0: outerRadius else: innerRadius
         let angle = rotation + (i.float32 * PI / points.float32)
         let pt =
-          vec2(localCenter.x + sin(angle) * radius, localCenter.y - cos(angle) * radius)
+          vec2(localCenter.x + sin(angle) * radius, localCenter.y + cos(angle) * radius)
         if i == 0:
           path.moveTo(pt)
         else:
