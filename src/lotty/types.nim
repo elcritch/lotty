@@ -3,6 +3,10 @@ import std/options
 import pkg/jsony
 
 type
+  LottieAnimKind* = enum
+    lakStatic = 0
+    lakAnimated = 1
+
   LottieBezier* = object
     x*: seq[float32]
     y*: seq[float32]
@@ -16,8 +20,8 @@ type
     h*: Option[int]
 
   LottieProperty*[T] = object
-    case a*: int
-    of 1:
+    case a*: LottieAnimKind
+    of lakAnimated:
       kFrames*: seq[LottieKeyframe[T]]
     else:
       kValue*: T
@@ -83,7 +87,7 @@ type
 
 proc renameHook*[T](v: var LottieProperty[T], key: var string) =
   if key == "k":
-    if v.a == 1:
+    if v.a == lakAnimated:
       key = "kFrames"
     else:
       key = "kValue"

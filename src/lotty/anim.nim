@@ -76,7 +76,7 @@ proc keyframeValue[T](keys: seq[LottieKeyframe[T]], frame: float32): T =
 
 proc valueAt*[T](prop: LottieProperty[T], frame: float32, fallback: T): T =
   case prop.a
-  of 0:
+  of lakStatic:
     when T is seq[float32]:
       if prop.kValue.len == 0:
         fallback
@@ -84,7 +84,7 @@ proc valueAt*[T](prop: LottieProperty[T], frame: float32, fallback: T): T =
         prop.kValue
     else:
       prop.kValue
-  of 1:
+  of lakAnimated:
     if prop.kFrames.len == 0:
       fallback
     else:
