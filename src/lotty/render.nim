@@ -21,6 +21,7 @@ type
     animation*: LottieAnimation
     pxRange*: float32
     sdThreshold*: float32
+    maxSdfSize*: float32
 
 proc vec2FromSeq(vals: seq[float32], fallback: Vec2): Vec2 =
   if vals.len >= 2:
@@ -88,6 +89,7 @@ proc ensureEllipseMtsdf(
   var path = newPath()
   path.ellipse(vec2(size.x / 2.0'f32, size.y / 2.0'f32), size.x / 2.0'f32, size.y / 2.0'f32)
 
+  echo "WXH: ", width, " x ", height
   let mtsdf = generateMtsdfPath(path, width, height, pxRange.float64)
   loadImage(id, mtsdf.image)
   id
@@ -98,6 +100,7 @@ proc renderEllipseGroup(
     layerTransform: LottieResolvedTransform,
     group: LottieShape,
     frame: float32,
+    maxSdfSize: float32,
     pxRange: float32,
     sdThreshold: float32,
 ) =
@@ -157,7 +160,18 @@ proc renderEllipseGroup(
       tsize = applied.size
       topacity = topacity * applied.opacity
 
-    let imageId = ensureEllipseMtsdf(baseSize, pxRange)
+    let baseMax = max(baseSize.x, baseSize.y)
+    let renderScale =
+      if baseMax > 0.0'f32:
+        min(1.0'f32, maxSdfSize / baseMax)
+      else:
+        1.0'f32
+    let imageSize = vec2(
+      max(1.0'f32, baseSize.x * renderScale),
+      max(1.0'f32, baseSize.y * renderScale),
+    )
+    let imagePxRange = max(1.0'f32, pxRange * renderScale)
+    let imageId = ensureEllipseMtsdf(imageSize, imagePxRange)
     let color = color(fillColor.r, fillColor.g, fillColor.b, fillColor.a * topacity)
     let box = rect(
       tcenter.x - tsize.x / 2.0'f32,
@@ -177,7 +191,7 @@ proc renderEllipseGroup(
         mtsdfImage: MsdfImageStyle(
           color: color,
           id: imageId,
-          pxRange: pxRange,
+          pxRange: imagePxRange,
           sdThreshold: sdThreshold,
         ),
       ),
@@ -186,8 +200,14 @@ proc renderEllipseGroup(
 proc initLottieMtsdfRenderer*(animation: LottieAnimation,
     pxRange: float32 = 4.0'f32,
     sdThreshold: float32 = 0.5'f32,
+    maxSdfSize: float32 = 64.0'f32,
 ): LottieMtsdfRenderer =
-  LottieMtsdfRenderer(animation: animation, pxRange: pxRange, sdThreshold: sdThreshold)
+  LottieMtsdfRenderer(
+    animation: animation,
+    pxRange: pxRange,
+    sdThreshold: sdThreshold,
+    maxSdfSize: maxSdfSize,
+  )
 
 proc renderLottieFrame*(renderer: var LottieMtsdfRenderer, frame: float32): Renders =
   var list = RenderList()
@@ -196,7 +216,12 @@ proc renderLottieFrame*(renderer: var LottieMtsdfRenderer, frame: float32): Rend
       kind: nkFrame,
       childCount: 0,
       zlevel: 0.ZLevel,
-      screenBox: rect(0.0, 0.0, renderer.animation.w.float32, renderer.animation.h.float32),
+      screenBox: rect(
+        0.0,
+        0.0,
+        renderer.animation.w.float32,
+        renderer.animation.h.float32,
+      ),
       fill: color(0.0, 0.0, 0.0, 0.0),
     )
   )
@@ -216,6 +241,7 @@ proc renderLottieFrame*(renderer: var LottieMtsdfRenderer, frame: float32): Rend
           layerTransform,
           shape,
           frame,
+          renderer.maxSdfSize,
           renderer.pxRange,
           renderer.sdThreshold,
         )
