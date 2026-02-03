@@ -4,6 +4,10 @@ Small Lottie loader + renderer for Nim, focused on producing Figdraw render list
 
 Status: this is a minimal renderer. It currently supports filled ellipse groups (Lottie `gr` + `el` + `fl` + `tr`) and ignores other shape types. The API and coverage are still evolving.
 
+
+https://github.com/user-attachments/assets/ee11e778-e6d2-4b3b-86cb-42a5072ad5fa
+
+
 ## Install
 
 This is a Nimble package. From the repo root:
