@@ -8,6 +8,10 @@ Status: this is a minimal renderer. It currently supports filled ellipse groups 
 https://github.com/user-attachments/assets/ee11e778-e6d2-4b3b-86cb-42a5072ad5fa
 
 
+https://github.com/user-attachments/assets/8e73c676-34df-44be-aa27-b9ec4fc70733
+
+
+
 ## Install
 
 This is a Nimble package. From the repo root:
