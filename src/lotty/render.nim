@@ -47,8 +47,11 @@ proc resolvedTransform(tr: LottieTransform, frame: float32): LottieResolvedTrans
   result.rotation = valueAtOr(tr.r, frame, 0.0'f32)
   result.opacity = valueAtOr(tr.o, frame, 100.0'f32)
 
-proc resolvedTransformFromShape(shape: LottieShape, frame: float32): LottieResolvedTransform =
-  result.anchor = vec2FromSeq(valueAtOr(shape.a, frame, @[0.0'f32, 0.0'f32]), vec2(0.0, 0.0))
+proc resolvedTransformFromShape(
+    shape: LottieShape, frame: float32
+): LottieResolvedTransform =
+  result.anchor =
+    vec2FromSeq(valueAtOr(shape.a, frame, @[0.0'f32, 0.0'f32]), vec2(0.0, 0.0))
   result.position =
     vec2FromSeq(valueAtOr(shape.p, frame, @[0.0'f32, 0.0'f32]), vec2(0.0, 0.0))
   result.scale =
@@ -65,10 +68,8 @@ proc applyTransform(
   let cosA = cos(angle)
   let sinA = sin(angle)
   let scaled = vec2(local.x * scale.x, local.y * scale.y)
-  let rotated = vec2(
-    scaled.x * cosA - scaled.y * sinA,
-    scaled.x * sinA + scaled.y * cosA,
-  )
+  let rotated =
+    vec2(scaled.x * cosA - scaled.y * sinA, scaled.x * sinA + scaled.y * cosA)
   result.center = transform.position + rotated
   result.size = vec2(size.x * scale.x, size.y * scale.y)
   result.opacity = transform.opacity / 100.0'f32
@@ -77,9 +78,7 @@ proc ellipseImageId(size: Vec2): ImageId =
   let key = "lottie:ellipse:" & $size.x & "x" & $size.y
   imgId(key)
 
-proc ensureEllipseMtsdf(
-    size: Vec2, pxRange: float32
-): ImageId =
+proc ensureEllipseMtsdf(size: Vec2, pxRange: float32): ImageId =
   let id = ellipseImageId(size)
   if hasImage(id):
     return id
@@ -87,7 +86,9 @@ proc ensureEllipseMtsdf(
   let width = max(1, size.x.round().int)
   let height = max(1, size.y.round().int)
   var path = newPath()
-  path.ellipse(vec2(size.x / 2.0'f32, size.y / 2.0'f32), size.x / 2.0'f32, size.y / 2.0'f32)
+  path.ellipse(
+    vec2(size.x / 2.0'f32, size.y / 2.0'f32), size.x / 2.0'f32, size.y / 2.0'f32
+  )
 
   echo "WXH: ", width, " x ", height
   let mtsdf = generateMtsdfPath(path, width, height, pxRange.float64)
@@ -167,17 +168,13 @@ proc renderEllipseGroup(
       else:
         1.0'f32
     let imageSize = vec2(
-      max(1.0'f32, baseSize.x * renderScale),
-      max(1.0'f32, baseSize.y * renderScale),
+      max(1.0'f32, baseSize.x * renderScale), max(1.0'f32, baseSize.y * renderScale)
     )
     let imagePxRange = max(1.0'f32, pxRange * renderScale)
     let imageId = ensureEllipseMtsdf(imageSize, imagePxRange)
     let color = color(fillColor.r, fillColor.g, fillColor.b, fillColor.a * topacity)
     let box = rect(
-      tcenter.x - tsize.x / 2.0'f32,
-      tcenter.y - tsize.y / 2.0'f32,
-      tsize.x,
-      tsize.y,
+      tcenter.x - tsize.x / 2.0'f32, tcenter.y - tsize.y / 2.0'f32, tsize.x, tsize.y
     )
 
     list.addChild(
@@ -189,15 +186,13 @@ proc renderEllipseGroup(
         screenBox: box,
         fill: color,
         mtsdfImage: MsdfImageStyle(
-          color: color,
-          id: imageId,
-          pxRange: imagePxRange,
-          sdThreshold: sdThreshold,
+          color: color, id: imageId, pxRange: imagePxRange, sdThreshold: sdThreshold
         ),
       ),
     )
 
-proc initLottieMtsdfRenderer*(animation: LottieAnimation,
+proc initLottieMtsdfRenderer*(
+    animation: LottieAnimation,
     pxRange: float32 = 4.0'f32,
     sdThreshold: float32 = 0.5'f32,
     maxSdfSize: float32 = 64.0'f32,
@@ -216,12 +211,8 @@ proc renderLottieFrame*(renderer: var LottieMtsdfRenderer, frame: float32): Rend
       kind: nkFrame,
       childCount: 0,
       zlevel: 0.ZLevel,
-      screenBox: rect(
-        0.0,
-        0.0,
-        renderer.animation.w.float32,
-        renderer.animation.h.float32,
-      ),
+      screenBox:
+        rect(0.0, 0.0, renderer.animation.w.float32, renderer.animation.h.float32),
       fill: color(0.0, 0.0, 0.0, 0.0),
     )
   )
@@ -236,14 +227,8 @@ proc renderLottieFrame*(renderer: var LottieMtsdfRenderer, frame: float32): Rend
     for shape in layer.shapes:
       if shape.ty == lstGroup:
         renderEllipseGroup(
-          list,
-          rootIdx,
-          layerTransform,
-          shape,
-          frame,
-          renderer.maxSdfSize,
-          renderer.pxRange,
-          renderer.sdThreshold,
+          list, rootIdx, layerTransform, shape, frame, renderer.maxSdfSize,
+          renderer.pxRange, renderer.sdThreshold,
         )
 
   result = Renders(layers: initOrderedTable[ZLevel, RenderList]())
