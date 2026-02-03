@@ -1,7 +1,7 @@
 import std/[os, unittest]
 
-import figdraw/lottie/loader
-import figdraw/lottie/render
+import lotty/loader
+import lotty/render
 import figdraw/common/imgutils
 import figdraw/fignodes
 import figdraw/commons
