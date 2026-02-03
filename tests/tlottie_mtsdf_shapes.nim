@@ -83,20 +83,43 @@ proc pathFromShape(shape: LottieShape): Path =
 
   path
 
-proc writeShape(outDir: string, name: string, shape: LottieShape) =
+proc writeShape(outDir: string, name: string, shape: LottieShape, size: int) =
   let path = pathFromShape(shape)
-  let mtsdf = generateMtsdfPath(path, imageSize, imageSize, pxRange)
+  let mtsdf = generateMtsdfPath(path, size, size, pxRange)
   let outPath = outDir / name
   mtsdf.image.writeFile(outPath)
   check fileExists(outPath)
 
-proc writeShapeRendered(outDir: string, name: string, shape: LottieShape) =
+proc writeShapeMsdf(outDir: string, name: string, shape: LottieShape, size: int) =
   let path = pathFromShape(shape)
-  let mtsdf = generateMtsdfPath(path, imageSize, imageSize, pxRange)
+  let msdf = generateMsdfPath(path, size, size, pxRange)
+  let outPath = outDir / name
+  msdf.image.writeFile(outPath)
+  check fileExists(outPath)
+
+proc writeShapeRendered(outDir: string, name: string, shape: LottieShape, size: int) =
+  let path = pathFromShape(shape)
+  let mtsdf = generateMtsdfPath(path, size, size, pxRange)
   let rendered = renderMsdf(mtsdf)
   let outPath = outDir / name
   rendered.writeFile(outPath)
   check fileExists(outPath)
+
+proc writeShapeMsdfRendered(
+    outDir: string, name: string, shape: LottieShape, size: int
+) =
+  let path = pathFromShape(shape)
+  let msdf = generateMsdfPath(path, size, size, pxRange)
+  let rendered = renderMsdf(msdf)
+  let outPath = outDir / name
+  rendered.writeFile(outPath)
+  check fileExists(outPath)
+
+proc writeShape(outDir: string, name: string, shape: LottieShape) =
+  writeShape(outDir, name, shape, imageSize)
+
+proc writeShapeRendered(outDir: string, name: string, shape: LottieShape) =
+  writeShapeRendered(outDir, name, shape, imageSize)
 
 proc assertImageMatches(
     outDir: string,
@@ -224,37 +247,40 @@ suite "lottie mtsdf basic shapes":
     let heartPath = LottiePath(
       v:
         @[
-          @[95.837'f32, 166.244'f32],
-          @[96.163'f32, 166.655'f32],
-          @[180.0'f32, 12.0'f32],
-          @[96.163'f32, 25.019'f32],
-          @[95.837'f32, 25.019'f32],
-          @[12.0'f32, 12.0'f32],
+          @[237.376'f32, 436.245'f32],
+          @[238.15'f32, 437.221'f32],
+          @[437.481'f32, 69.515'f32],
+          @[238.15'f32, 100.468'f32],
+          @[237.376'f32, 100.468'f32],
+          @[38.045'f32, 69.515'f32],
         ],
       o:
         @[
           @[0.0'f32, 0.0'f32],
-          @[88.72'f32, -35.815'f32],
-          @[-39.073'f32, -35.815'f32],
+          @[210.94'f32, -85.154'f32],
+          @[-92.899'f32, -85.154'f32],
           @[0.0'f32, 0.0'f32],
           @[0.0'f32, 0.0'f32],
-          @[-39.068'f32, 35.811'f32],
+          @[-92.889'f32, 85.143'f32],
         ],
       i:
         @[
+          @[-210.939'f32, -85.153'f32],
+          @[0.0'f32, 0.0'f32],
+          @[92.89'f32, 85.153'f32],
           @[0.0'f32, 0.0'f32],
           @[0.0'f32, 0.0'f32],
-          @[39.069'f32, 35.815'f32],
-          @[0.0'f32, 0.0'f32],
-          @[0.0'f32, 0.0'f32],
-          @[39.069'f32, -35.815'f32],
+          @[92.891'f32, -85.154'f32],
         ],
       c: true,
     )
 
     let heartShape = LottieShape(ty: lstPath, path: optProp(heartPath))
-    writeShape(outDir, "lottie_mtsdf_heart.png", heartShape)
-    writeShapeRendered(outDir, "lottie_mtsdf_heart_render.png", heartShape)
+    let heartSize = 128
+    writeShapeMsdf(outDir, "lottie_mtsdf_heart.png", heartShape, heartSize)
+    writeShapeMsdfRendered(
+      outDir, "lottie_mtsdf_heart_render.png", heartShape, heartSize
+    )
 
     let expectedField = expectedDir / "msdf_heart_field.png"
     let expectedRender = expectedDir / "msdf_heart_render.png"

@@ -183,8 +183,8 @@ proc shapePathData(
       return (newPath(), center, vec2(0.0, 0.0), false)
     let bounds = computeBounds(path)
     let size = vec2(bounds.w, bounds.h)
-    let center = vec2(bounds.x + bounds.w / 2.0'f32, bounds.y + bounds.h / 2.0'f32)
     path.transform(translate(vec2(-bounds.x, -bounds.y)))
+    let center = vec2(size.x / 2.0'f32, size.y / 2.0'f32)
     result = (path, center, size, true)
   else:
     result = (newPath(), center, size, false)
