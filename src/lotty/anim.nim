@@ -89,8 +89,6 @@ proc valueAt*[T](prop: LottieProperty[T], frame: float32, fallback: T): T =
       fallback
     else:
       keyframeValue(prop.kFrames, frame)
-  else:
-    fallback
 
 proc valueAtOr*[T](prop: Option[LottieProperty[T]], frame: float32, fallback: T): T =
   if prop.isSome:
