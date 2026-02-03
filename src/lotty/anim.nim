@@ -10,15 +10,15 @@ proc handleValue(vals: seq[float32], fallback: float32): float32 =
 
 proc cubicBezier(t, p0, p1, p2, p3: float32): float32 =
   let u = 1.0'f32 - t
-  (u * u * u * p0) + (3.0'f32 * u * u * t * p1) +
-    (3.0'f32 * u * t * t * p2) + (t * t * t * p3)
+  (u * u * u * p0) + (3.0'f32 * u * u * t * p1) + (3.0'f32 * u * t * t * p2) +
+    (t * t * t * p3)
 
 proc cubicBezierDerivative(t, p0, p1, p2, p3: float32): float32 =
   let u = 1.0'f32 - t
   (3.0'f32 * u * u * (p1 - p0)) + (6.0'f32 * u * t * (p2 - p1)) +
     (3.0'f32 * t * t * (p3 - p2))
 
-proc bezierEase(progress: float32; outHandle, inHandle: LottieBezier): float32 =
+proc bezierEase(progress: float32, outHandle, inHandle: LottieBezier): float32 =
   let x1 = handleValue(outHandle.x, 0.0'f32)
   let y1 = handleValue(outHandle.y, 0.0'f32)
   let x2 = handleValue(inHandle.x, 1.0'f32)
@@ -33,7 +33,7 @@ proc bezierEase(progress: float32; outHandle, inHandle: LottieBezier): float32 =
     t = clamp(t - (x - progress) / dx, 0.0'f32, 1.0'f32)
   cubicBezier(t, 0.0'f32, y1, y2, 1.0'f32)
 
-proc lerpValue[T](a, b: T; t: float32): T =
+proc lerpValue[T](a, b: T, t: float32): T =
   when T is float32:
     a + (b - a) * t
   elif T is float64:
@@ -41,8 +41,16 @@ proc lerpValue[T](a, b: T; t: float32): T =
   elif T is seq[float32]:
     result = newSeq[float32](max(a.len, b.len))
     for i in 0 ..< result.len:
-      let av = if i < a.len: a[i] else: 0.0'f32
-      let bv = if i < b.len: b[i] else: 0.0'f32
+      let av =
+        if i < a.len:
+          a[i]
+        else:
+          0.0'f32
+      let bv =
+        if i < b.len:
+          b[i]
+        else:
+          0.0'f32
       result[i] = av + (bv - av) * t
   else:
     result = a
@@ -78,10 +86,7 @@ proc valueAt*[T](prop: LottieProperty[T], frame: float32, fallback: T): T =
   case prop.a
   of lakStatic:
     when T is seq[float32]:
-      if prop.kValue.len == 0:
-        fallback
-      else:
-        prop.kValue
+      if prop.kValue.len == 0: fallback else: prop.kValue
     else:
       prop.kValue
   of lakAnimated:

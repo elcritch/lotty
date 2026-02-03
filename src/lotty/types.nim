@@ -7,6 +7,9 @@ type
     lstUnknown
     lstGroup
     lstEllipse
+    lstRect
+    lstStar
+    lstPath
     lstFill
     lstTransform
 
@@ -17,6 +20,12 @@ type
   LottieBezier* = object
     x*: seq[float32]
     y*: seq[float32]
+
+  LottiePath* = object
+    i*: seq[seq[float32]]
+    o*: seq[seq[float32]]
+    v*: seq[seq[float32]]
+    c*: bool
 
   LottieKeyframe*[T] = object
     t*: float32
@@ -49,6 +58,13 @@ type
     c*: Option[LottieProperty[seq[float32]]]
     o*: Option[LottieProperty[float32]]
     np*: Option[float32]
+    points*: Option[LottieProperty[float32]]
+    innerRadius*: Option[LottieProperty[float32]]
+    outerRadius*: Option[LottieProperty[float32]]
+    innerRoundness*: Option[LottieProperty[float32]]
+    outerRoundness*: Option[LottieProperty[float32]]
+    starType*: Option[float32]
+    path*: Option[LottieProperty[LottiePath]]
     it*: seq[LottieShape]
     a*: Option[LottieProperty[seq[float32]]]
     sk*: Option[LottieProperty[float32]]
@@ -96,14 +112,14 @@ proc parseFloatOrSeq1(raw: string): float32 =
       result = values[0]
 
 proc parseHook*(s: string, i: var int, v: var LottieKeyframe[float32]) =
-  type
-    LottieKeyframeWire = object
-      t*: float32
-      s*: RawJson
-      e*: Option[RawJson]
-      i*: Option[LottieBezier]
-      o*: Option[LottieBezier]
-      h*: Option[int]
+  type LottieKeyframeWire = object
+    t*: float32
+    s*: RawJson
+    e*: Option[RawJson]
+    i*: Option[LottieBezier]
+    o*: Option[LottieBezier]
+    h*: Option[int]
+
   var wire: LottieKeyframeWire
   parseHook(s, i, wire)
   v = default(LottieKeyframe[float32])
@@ -118,6 +134,20 @@ proc parseHook*(s: string, i: var int, v: var LottieKeyframe[float32]) =
 proc renameHook*(v: var LottieShape, key: var string) =
   if key == "r" and v.ty == lstFill:
     key = "fillRule"
+  elif key == "pt":
+    key = "points"
+  elif key == "ir":
+    key = "innerRadius"
+  elif key == "or":
+    key = "outerRadius"
+  elif key == "is":
+    key = "innerRoundness"
+  elif key == "os":
+    key = "outerRoundness"
+  elif key == "sy":
+    key = "starType"
+  elif key == "ks":
+    key = "path"
 
 proc parseHook*(s: string, i: var int, v: var LottieShapeType) =
   var raw: string
@@ -127,6 +157,12 @@ proc parseHook*(s: string, i: var int, v: var LottieShapeType) =
     v = lstGroup
   of "el":
     v = lstEllipse
+  of "rc":
+    v = lstRect
+  of "sr":
+    v = lstStar
+  of "sh":
+    v = lstPath
   of "fl":
     v = lstFill
   of "tr":

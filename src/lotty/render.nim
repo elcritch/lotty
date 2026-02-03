@@ -7,6 +7,7 @@ import figdraw/fignodes
 import figdraw/common/imgutils
 
 import ./types
+import ./paths
 import ./anim
 
 type
@@ -47,8 +48,11 @@ proc resolvedTransform(tr: LottieTransform, frame: float32): LottieResolvedTrans
   result.rotation = valueAtOr(tr.r, frame, 0.0'f32)
   result.opacity = valueAtOr(tr.o, frame, 100.0'f32)
 
-proc resolvedTransformFromShape(shape: LottieShape, frame: float32): LottieResolvedTransform =
-  result.anchor = vec2FromSeq(valueAtOr(shape.a, frame, @[0.0'f32, 0.0'f32]), vec2(0.0, 0.0))
+proc resolvedTransformFromShape(
+    shape: LottieShape, frame: float32
+): LottieResolvedTransform =
+  result.anchor =
+    vec2FromSeq(valueAtOr(shape.a, frame, @[0.0'f32, 0.0'f32]), vec2(0.0, 0.0))
   result.position =
     vec2FromSeq(valueAtOr(shape.p, frame, @[0.0'f32, 0.0'f32]), vec2(0.0, 0.0))
   result.scale =
@@ -65,10 +69,8 @@ proc applyTransform(
   let cosA = cos(angle)
   let sinA = sin(angle)
   let scaled = vec2(local.x * scale.x, local.y * scale.y)
-  let rotated = vec2(
-    scaled.x * cosA - scaled.y * sinA,
-    scaled.x * sinA + scaled.y * cosA,
-  )
+  let rotated =
+    vec2(scaled.x * cosA - scaled.y * sinA, scaled.x * sinA + scaled.y * cosA)
   result.center = transform.position + rotated
   result.size = vec2(size.x * scale.x, size.y * scale.y)
   result.opacity = transform.opacity / 100.0'f32
@@ -77,9 +79,7 @@ proc ellipseImageId(size: Vec2): ImageId =
   let key = "lottie:ellipse:" & $size.x & "x" & $size.y
   imgId(key)
 
-proc ensureEllipseMtsdf(
-    size: Vec2, pxRange: float32
-): ImageId =
+proc ensureEllipseMtsdf(size: Vec2, pxRange: float32): ImageId =
   let id = ellipseImageId(size)
   if hasImage(id):
     return id
@@ -87,14 +87,109 @@ proc ensureEllipseMtsdf(
   let width = max(1, size.x.round().int)
   let height = max(1, size.y.round().int)
   var path = newPath()
-  path.ellipse(vec2(size.x / 2.0'f32, size.y / 2.0'f32), size.x / 2.0'f32, size.y / 2.0'f32)
+  path.ellipse(
+    vec2(size.x / 2.0'f32, size.y / 2.0'f32), size.x / 2.0'f32, size.y / 2.0'f32
+  )
 
   echo "WXH: ", width, " x ", height
   let mtsdf = generateMtsdfPath(path, width, height, pxRange.float64)
   loadImage(id, mtsdf.image)
   id
 
-proc renderEllipseGroup(
+proc pathImageId(path: Path, size: Vec2): ImageId =
+  let key = "lottie:path:" & $hash($path) & ":" & $size.x & "x" & $size.y
+  imgId(key)
+
+proc ensurePathMtsdf(path: Path, size: Vec2, pxRange: float32): ImageId =
+  let id = pathImageId(path, size)
+  if hasImage(id):
+    return id
+
+  let width = max(1, size.x.round().int)
+  let height = max(1, size.y.round().int)
+  let mtsdf = generateMtsdfPath(path, width, height, pxRange.float64)
+  loadImage(id, mtsdf.image)
+  id
+
+proc shapePathData(
+    shape: LottieShape, frame: float32
+): tuple[path: Path, center: Vec2, size: Vec2, valid: bool] =
+  let center =
+    vec2FromSeq(valueAtOr(shape.p, frame, @[0.0'f32, 0.0'f32]), vec2(0.0, 0.0))
+  let size = vec2FromSeq(valueAtOr(shape.s, frame, @[0.0'f32, 0.0'f32]), vec2(0.0, 0.0))
+  let roundness = valueAtOr(shape.r, frame, 0.0'f32)
+
+  case shape.ty
+  of lstEllipse:
+    if size.x <= 0.0'f32 or size.y <= 0.0'f32:
+      return (newPath(), center, size, false)
+    let path = newPath()
+    path.ellipse(
+      vec2(size.x / 2.0'f32, size.y / 2.0'f32), size.x / 2.0'f32, size.y / 2.0'f32
+    )
+    result = (path, center, size, true)
+  of lstRect:
+    if size.x <= 0.0'f32 or size.y <= 0.0'f32:
+      return (newPath(), center, size, false)
+    let path = newPath()
+    if roundness > 0.0'f32:
+      path.roundedRect(
+        0.0, 0.0, size.x, size.y, roundness, roundness, roundness, roundness
+      )
+    else:
+      path.rect(0.0, 0.0, size.x, size.y)
+    result = (path, center, size, true)
+  of lstStar:
+    let points = max(3, valueAtOr(shape.points, frame, 0.0'f32).round().int)
+    let outerRadius = valueAtOr(shape.outerRadius, frame, 0.0'f32)
+    let innerRadius = valueAtOr(shape.innerRadius, frame, 0.0'f32)
+    let rotation = valueAtOr(shape.r, frame, 0.0'f32) * (PI / 180.0'f32)
+    let starType = shape.starType.get(1.0'f32)
+    let isPolygon = starType >= 2.0'f32 or innerRadius <= 0.0'f32
+    if points <= 2 or outerRadius <= 0.0'f32:
+      return (newPath(), center, vec2(0.0, 0.0), false)
+    let path = newPath()
+    let baseSize = vec2(outerRadius * 2.0'f32, outerRadius * 2.0'f32)
+    let localCenter = vec2(outerRadius, outerRadius)
+    if isPolygon:
+      for i in 0 ..< points:
+        let angle = rotation + (i.float32 * 2.0'f32 * PI / points.float32)
+        let pt = vec2(
+          localCenter.x + sin(angle) * outerRadius,
+          localCenter.y + cos(angle) * outerRadius,
+        )
+        if i == 0:
+          path.moveTo(pt)
+        else:
+          path.lineTo(pt)
+      path.closePath()
+    else:
+      let total = points * 2
+      for i in 0 ..< total:
+        let radius = if i mod 2 == 0: outerRadius else: innerRadius
+        let angle = rotation + (i.float32 * PI / points.float32)
+        let pt =
+          vec2(localCenter.x + sin(angle) * radius, localCenter.y + cos(angle) * radius)
+        if i == 0:
+          path.moveTo(pt)
+        else:
+          path.lineTo(pt)
+      path.closePath()
+    result = (path, center, baseSize, true)
+  of lstPath:
+    let pathData = valueAtOr(shape.path, frame, default(LottiePath))
+    var path = pathFromLottiePath(pathData, flipY = true)
+    if pathData.v.len == 0:
+      return (newPath(), center, vec2(0.0, 0.0), false)
+    let bounds = computeBounds(path)
+    let size = vec2(bounds.w, bounds.h)
+    path.transform(translate(vec2(-bounds.x, -bounds.y)))
+    let center = vec2(size.x / 2.0'f32, size.y / 2.0'f32)
+    result = (path, center, size, true)
+  else:
+    result = (newPath(), center, size, false)
+
+proc renderShapeGroup(
     list: var RenderList,
     parentIdx: FigIdx,
     layerTransform: LottieResolvedTransform,
@@ -106,12 +201,12 @@ proc renderEllipseGroup(
 ) =
   var fillOpt: Option[LottieShape]
   var transformOpt: Option[LottieShape]
-  var ellipses: seq[LottieShape]
+  var shapes: seq[LottieShape]
 
   for item in group.it:
     case item.ty
-    of lstEllipse:
-      ellipses.add item
+    of lstEllipse, lstRect, lstStar, lstPath:
+      shapes.add item
     of lstFill:
       fillOpt = some(item)
     of lstTransform:
@@ -136,16 +231,13 @@ proc renderEllipseGroup(
   if transformOpt.isSome:
     groupTransform = resolvedTransformFromShape(transformOpt.get, frame)
 
-  for ellipse in ellipses:
-    let baseCenter =
-      vec2FromSeq(valueAtOr(ellipse.p, frame, @[0.0'f32, 0.0'f32]), vec2(0.0, 0.0))
-    let baseSize =
-      vec2FromSeq(valueAtOr(ellipse.s, frame, @[0.0'f32, 0.0'f32]), vec2(0.0, 0.0))
-    if baseSize.x <= 0.0'f32 or baseSize.y <= 0.0'f32:
+  for shape in shapes:
+    let shapeData = shapePathData(shape, frame)
+    if not shapeData.valid:
       continue
 
-    var tcenter = baseCenter
-    var tsize = baseSize
+    var tcenter = shapeData.center
+    var tsize = shapeData.size
     var topacity = 1.0'f32
 
     block applyGroup:
@@ -160,24 +252,25 @@ proc renderEllipseGroup(
       tsize = applied.size
       topacity = topacity * applied.opacity
 
-    let baseMax = max(baseSize.x, baseSize.y)
+    let baseMax = max(shapeData.size.x, shapeData.size.y)
     let renderScale =
       if baseMax > 0.0'f32:
         min(1.0'f32, maxSdfSize / baseMax)
       else:
         1.0'f32
     let imageSize = vec2(
-      max(1.0'f32, baseSize.x * renderScale),
-      max(1.0'f32, baseSize.y * renderScale),
+      max(1.0'f32, shapeData.size.x * renderScale),
+      max(1.0'f32, shapeData.size.y * renderScale),
     )
     let imagePxRange = max(1.0'f32, pxRange * renderScale)
-    let imageId = ensureEllipseMtsdf(imageSize, imagePxRange)
+    let imageId =
+      if shape.ty == lstEllipse:
+        ensureEllipseMtsdf(imageSize, imagePxRange)
+      else:
+        ensurePathMtsdf(shapeData.path, imageSize, imagePxRange)
     let color = color(fillColor.r, fillColor.g, fillColor.b, fillColor.a * topacity)
     let box = rect(
-      tcenter.x - tsize.x / 2.0'f32,
-      tcenter.y - tsize.y / 2.0'f32,
-      tsize.x,
-      tsize.y,
+      tcenter.x - tsize.x / 2.0'f32, tcenter.y - tsize.y / 2.0'f32, tsize.x, tsize.y
     )
 
     list.addChild(
@@ -189,15 +282,13 @@ proc renderEllipseGroup(
         screenBox: box,
         fill: color,
         mtsdfImage: MsdfImageStyle(
-          color: color,
-          id: imageId,
-          pxRange: imagePxRange,
-          sdThreshold: sdThreshold,
+          color: color, id: imageId, pxRange: imagePxRange, sdThreshold: sdThreshold
         ),
       ),
     )
 
-proc initLottieMtsdfRenderer*(animation: LottieAnimation,
+proc initLottieMtsdfRenderer*(
+    animation: LottieAnimation,
     pxRange: float32 = 4.0'f32,
     sdThreshold: float32 = 0.5'f32,
     maxSdfSize: float32 = 64.0'f32,
@@ -216,12 +307,8 @@ proc renderLottieFrame*(renderer: var LottieMtsdfRenderer, frame: float32): Rend
       kind: nkFrame,
       childCount: 0,
       zlevel: 0.ZLevel,
-      screenBox: rect(
-        0.0,
-        0.0,
-        renderer.animation.w.float32,
-        renderer.animation.h.float32,
-      ),
+      screenBox:
+        rect(0.0, 0.0, renderer.animation.w.float32, renderer.animation.h.float32),
       fill: color(0.0, 0.0, 0.0, 0.0),
     )
   )
@@ -235,15 +322,9 @@ proc renderLottieFrame*(renderer: var LottieMtsdfRenderer, frame: float32): Rend
     let layerTransform = resolvedTransform(layer.ks, frame)
     for shape in layer.shapes:
       if shape.ty == lstGroup:
-        renderEllipseGroup(
-          list,
-          rootIdx,
-          layerTransform,
-          shape,
-          frame,
-          renderer.maxSdfSize,
-          renderer.pxRange,
-          renderer.sdThreshold,
+        renderShapeGroup(
+          list, rootIdx, layerTransform, shape, frame, renderer.maxSdfSize,
+          renderer.pxRange, renderer.sdThreshold,
         )
 
   result = Renders(layers: initOrderedTable[ZLevel, RenderList]())
