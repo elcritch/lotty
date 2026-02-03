@@ -111,7 +111,6 @@ proc ensurePathMtsdf(path: Path, size: Vec2, pxRange: float32): ImageId =
   loadImage(id, mtsdf.image)
   id
 
-
 proc shapePathData(
     shape: LottieShape, frame: float32
 ): tuple[path: Path, center: Vec2, size: Vec2, valid: bool] =

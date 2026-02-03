@@ -4,6 +4,7 @@ import pkg/pixie
 import pkg/sdfy/msdfgen
 
 import lotty/anim
+import lotty/paths
 import lotty/types
 
 const
@@ -23,50 +24,6 @@ proc vec2FromSeq(vals: seq[float32], fallback: Vec2): Vec2 =
     vec2(vals[0], vals[0])
   else:
     fallback
-
-proc pathFromLottiePath(pathData: LottiePath): Path =
-  var path = newPath()
-  if pathData.v.len == 0:
-    return path
-
-  let first = vec2FromSeq(pathData.v[0], vec2(0.0, 0.0))
-  path.moveTo(first)
-
-  let lastIndex = pathData.v.len - 1
-  for i in 0 ..< lastIndex:
-    let v0 = vec2FromSeq(pathData.v[i], vec2(0.0, 0.0))
-    let v1 = vec2FromSeq(pathData.v[i + 1], vec2(0.0, 0.0))
-    let o0 =
-      if i < pathData.o.len:
-        vec2FromSeq(pathData.o[i], vec2(0.0, 0.0))
-      else:
-        vec2(0.0, 0.0)
-    let i1 =
-      if i + 1 < pathData.i.len:
-        vec2FromSeq(pathData.i[i + 1], vec2(0.0, 0.0))
-      else:
-        vec2(0.0, 0.0)
-
-    path.bezierCurveTo(v0 + o0, v1 + i1, v1)
-
-  if pathData.c:
-    let vLast = vec2FromSeq(pathData.v[lastIndex], vec2(0.0, 0.0))
-    let vFirst = vec2FromSeq(pathData.v[0], vec2(0.0, 0.0))
-    let oLast =
-      if lastIndex < pathData.o.len:
-        vec2FromSeq(pathData.o[lastIndex], vec2(0.0, 0.0))
-      else:
-        vec2(0.0, 0.0)
-    let iFirst =
-      if 0 < pathData.i.len:
-        vec2FromSeq(pathData.i[0], vec2(0.0, 0.0))
-      else:
-        vec2(0.0, 0.0)
-
-    path.bezierCurveTo(vLast + oLast, vFirst + iFirst, vFirst)
-    path.closePath()
-
-  path
 
 proc pathFromShape(shape: LottieShape): Path =
   let frame = 0.0'f32
@@ -131,6 +88,14 @@ proc writeShape(outDir: string, name: string, shape: LottieShape) =
   let mtsdf = generateMtsdfPath(path, imageSize, imageSize, pxRange)
   let outPath = outDir / name
   mtsdf.image.writeFile(outPath)
+  check fileExists(outPath)
+
+proc writeShapeRendered(outDir: string, name: string, shape: LottieShape) =
+  let path = pathFromShape(shape)
+  let mtsdf = generateMtsdfPath(path, imageSize, imageSize, pxRange)
+  let rendered = renderMsdf(mtsdf)
+  let outPath = outDir / name
+  rendered.writeFile(outPath)
   check fileExists(outPath)
 
 suite "lottie mtsdf basic shapes":
@@ -211,30 +176,66 @@ suite "lottie mtsdf basic shapes":
     let genericPath = LottieShape(ty: lstPath, path: optProp(pathData))
     writeShape(outDir, "lottie_mtsdf_path.png", genericPath)
 
-    let heartPath = LottiePath(
+    let diamondPath = LottiePath(
       v:
         @[
-          @[96.0'f32, 140.0'f32],
-          @[60.0'f32, 80.0'f32],
-          @[96.0'f32, 60.0'f32],
-          @[132.0'f32, 80.0'f32],
+          @[0.0'f32, -60.0'f32],
+          @[60.0'f32, 0.0'f32],
+          @[0.0'f32, 60.0'f32],
+          @[-60.0'f32, 0.0'f32],
         ],
       o:
         @[
+          @[20.0'f32, 0.0'f32],
+          @[0.0'f32, 20.0'f32],
+          @[-20.0'f32, 0.0'f32],
           @[0.0'f32, -20.0'f32],
-          @[0.0'f32, -30.0'f32],
-          @[6.0'f32, -20.0'f32],
-          @[0.0'f32, 30.0'f32],
         ],
       i:
         @[
           @[0.0'f32, -20.0'f32],
-          @[0.0'f32, 30.0'f32],
-          @[-6.0'f32, -20.0'f32],
-          @[0.0'f32, -30.0'f32],
+          @[20.0'f32, 0.0'f32],
+          @[0.0'f32, 20.0'f32],
+          @[-20.0'f32, 0.0'f32],
+        ],
+      c: true,
+    )
+
+    let diamondShape = LottieShape(ty: lstPath, path: optProp(diamondPath))
+    writeShape(outDir, "lottie_mtsdf_diamond.png", diamondShape)
+    writeShapeRendered(outDir, "lottie_mtsdf_diamond_render.png", diamondShape)
+
+    let heartPath = LottiePath(
+      v:
+        @[
+          @[95.837'f32, 166.244'f32],
+          @[96.163'f32, 166.655'f32],
+          @[180.0'f32, 12.0'f32],
+          @[96.163'f32, 25.019'f32],
+          @[95.837'f32, 25.019'f32],
+          @[12.0'f32, 12.0'f32],
+        ],
+      o:
+        @[
+          @[0.0'f32, 0.0'f32],
+          @[88.72'f32, -35.815'f32],
+          @[-39.073'f32, -35.815'f32],
+          @[0.0'f32, 0.0'f32],
+          @[0.0'f32, 0.0'f32],
+          @[-39.068'f32, 35.811'f32],
+        ],
+      i:
+        @[
+          @[0.0'f32, 0.0'f32],
+          @[0.0'f32, 0.0'f32],
+          @[39.069'f32, 35.815'f32],
+          @[0.0'f32, 0.0'f32],
+          @[0.0'f32, 0.0'f32],
+          @[39.069'f32, -35.815'f32],
         ],
       c: true,
     )
 
     let heartShape = LottieShape(ty: lstPath, path: optProp(heartPath))
     writeShape(outDir, "lottie_mtsdf_heart.png", heartShape)
+    writeShapeRendered(outDir, "lottie_mtsdf_heart_render.png", heartShape)
