@@ -87,6 +87,34 @@ proc renameHook*[T](v: var LottieProperty[T], key: var string) =
     else:
       key = "kValue"
 
+proc parseFloatOrSeq1(raw: string): float32 =
+  try:
+    result = jsony.fromJson(raw, float32)
+  except:
+    let values = jsony.fromJson(raw, seq[float32])
+    if values.len > 0:
+      result = values[0]
+
+proc parseHook*(s: string, i: var int, v: var LottieKeyframe[float32]) =
+  type
+    LottieKeyframeWire = object
+      t*: float32
+      s*: RawJson
+      e*: Option[RawJson]
+      i*: Option[LottieBezier]
+      o*: Option[LottieBezier]
+      h*: Option[int]
+  var wire: LottieKeyframeWire
+  parseHook(s, i, wire)
+  v = default(LottieKeyframe[float32])
+  v.t = wire.t
+  v.s = parseFloatOrSeq1(string(wire.s))
+  if wire.e.isSome:
+    v.e = some(parseFloatOrSeq1(string(wire.e.get)))
+  v.i = wire.i
+  v.o = wire.o
+  v.h = wire.h
+
 proc renameHook*(v: var LottieShape, key: var string) =
   if key == "r" and v.ty == lstFill:
     key = "fillRule"
