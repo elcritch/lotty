@@ -3,8 +3,9 @@ import std/[hashes, math, options]
 import pkg/pixie
 import pkg/sdfy/msdfgen
 
-import ../fignodes
-import ../common/imgutils
+import figdraw/fignodes
+import figdraw/common/imgutils
+
 import ./types
 import ./anim
 

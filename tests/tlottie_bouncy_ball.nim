@@ -9,7 +9,7 @@ import figdraw/commons
 suite "lottie bouncy ball":
   test "renders mtsdf ellipse at keyframes":
     setFigDataDir(getCurrentDir() / "data")
-    let anim = loadLottieFile(figDataDir() / "lottie" / "bouncy_ball.json")
+    let anim = loadLottieFile(figDataDir() / "bouncy_ball.json")
     var renderer = initLottieMtsdfRenderer(anim)
 
     let renders0 = renderer.renderLottieFrame(0.0'f32)
