@@ -98,10 +98,26 @@ proc writeShapeRendered(outDir: string, name: string, shape: LottieShape) =
   rendered.writeFile(outPath)
   check fileExists(outPath)
 
+proc assertImageMatches(
+    outDir: string,
+    actualPath: string,
+    expectedPath: string,
+    diffName: string,
+    maxDiff: float32,
+) =
+  let expected = readImage(expectedPath)
+  let actual = readImage(actualPath)
+  let (diffScore, diffImg) = diff(expected, actual)
+  if diffScore > maxDiff:
+    let diffPath = outDir / diffName
+    diffImg.writeFile(diffPath)
+  check diffScore <= maxDiff
+
 suite "lottie mtsdf basic shapes":
   test "generates mtsdf images for common shapes":
     let outDir = getCurrentDir() / "tests" / "output"
     createDir(outDir)
+    let expectedDir = getCurrentDir() / "tests" / "expected"
 
     let ellipse = LottieShape(
       ty: lstEllipse,
@@ -239,3 +255,16 @@ suite "lottie mtsdf basic shapes":
     let heartShape = LottieShape(ty: lstPath, path: optProp(heartPath))
     writeShape(outDir, "lottie_mtsdf_heart.png", heartShape)
     writeShapeRendered(outDir, "lottie_mtsdf_heart_render.png", heartShape)
+
+    let expectedField = expectedDir / "msdf_heart_field.png"
+    let expectedRender = expectedDir / "msdf_heart_render.png"
+    let actualField = outDir / "lottie_mtsdf_heart.png"
+    let actualRender = outDir / "lottie_mtsdf_heart_render.png"
+
+    assertImageMatches(
+      outDir, actualField, expectedField, "lottie_mtsdf_heart.diff.png", 0.01'f32
+    )
+    assertImageMatches(
+      outDir, actualRender, expectedRender, "lottie_mtsdf_heart_render.diff.png",
+      0.01'f32,
+    )
