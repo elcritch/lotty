@@ -13,8 +13,8 @@ import figdraw/commons
 import figdraw/common/fonttypes
 import figdraw/fignodes
 import figdraw/figrender as glrenderer
-import figdraw/lottie/loader
-import figdraw/lottie/render
+import lotty/loader
+import lotty/render
 
 const RunOnce {.booldefine: "figdraw.runOnce".}: bool = false
 
@@ -44,7 +44,7 @@ when isMainModule:
   let fpsFont = UiFont(typefaceId: typefaceId, size: 18.0'f32)
   var fpsText = "0.0 FPS"
 
-  let anim = loadLottieFile(figDataDir() / "lottie" / "bouncy_ball.json")
+  let anim = loadLottieFile(figDataDir() / "bouncy_ball.json")
   var lottieRenderer = initLottieMtsdfRenderer(anim)
 
   let renderer = glrenderer.newFigRenderer(atlasSize = 1024, )
