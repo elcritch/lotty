@@ -178,7 +178,7 @@ proc shapePathData(
     result = (path, center, baseSize, true)
   of lstPath:
     let pathData = valueAtOr(shape.path, frame, default(LottiePath))
-    var path = pathFromLottiePath(pathData)
+    var path = pathFromLottiePath(pathData, flipY = true)
     if pathData.v.len == 0:
       return (newPath(), center, vec2(0.0, 0.0), false)
     let bounds = computeBounds(path)

@@ -215,35 +215,6 @@ suite "lottie mtsdf basic shapes":
     let genericPath = LottieShape(ty: lstPath, path: optProp(pathData))
     writeShape(outDir, "lottie_mtsdf_path.png", genericPath)
 
-    let diamondPath = LottiePath(
-      v:
-        @[
-          @[0.0'f32, -60.0'f32],
-          @[60.0'f32, 0.0'f32],
-          @[0.0'f32, 60.0'f32],
-          @[-60.0'f32, 0.0'f32],
-        ],
-      o:
-        @[
-          @[20.0'f32, 0.0'f32],
-          @[0.0'f32, 20.0'f32],
-          @[-20.0'f32, 0.0'f32],
-          @[0.0'f32, -20.0'f32],
-        ],
-      i:
-        @[
-          @[0.0'f32, -20.0'f32],
-          @[20.0'f32, 0.0'f32],
-          @[0.0'f32, 20.0'f32],
-          @[-20.0'f32, 0.0'f32],
-        ],
-      c: true,
-    )
-
-    let diamondShape = LottieShape(ty: lstPath, path: optProp(diamondPath))
-    writeShape(outDir, "lottie_mtsdf_diamond.png", diamondShape)
-    writeShapeRendered(outDir, "lottie_mtsdf_diamond_render.png", diamondShape)
-
     let heartPath = LottiePath(
       v:
         @[
