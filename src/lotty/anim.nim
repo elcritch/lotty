@@ -69,9 +69,21 @@ proc keyframeValue[T](keys: seq[LottieKeyframe[T]], frame: float32): T =
         return k0.s
       let span = k1.t - k0.t
       if span <= 0.0'f32:
+        when T is seq[float32]:
+          if k1.s.len == 0:
+            return k0.s
         return k1.s
       let startVal = k0.s
-      let endVal = if k0.e.isSome: k0.e.get else: k1.s
+      let endVal =
+        when T is seq[float32]:
+          if k0.e.isSome:
+            k0.e.get
+          elif k1.s.len == 0:
+            startVal
+          else:
+            k1.s
+        else:
+          if k0.e.isSome: k0.e.get else: k1.s
       let rawT = clamp((frame - k0.t) / span, 0.0'f32, 1.0'f32)
       let eased =
         if k0.o.isSome and k0.i.isSome:
@@ -80,6 +92,12 @@ proc keyframeValue[T](keys: seq[LottieKeyframe[T]], frame: float32): T =
           rawT
       return lerpValue(startVal, endVal, eased)
 
+  when T is seq[float32]:
+    if keys[^1].s.len == 0 and keys.len > 1:
+      let prev = keys[^2]
+      if prev.e.isSome:
+        return prev.e.get
+      return prev.s
   keys[^1].s
 
 proc valueAt*[T](prop: LottieProperty[T], frame: float32, fallback: T): T =
