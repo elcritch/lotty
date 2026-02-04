@@ -287,13 +287,7 @@ proc renderShapeGroup(
     )
 
     let color = color(fillColor.r, fillColor.g, fillColor.b, fillColor.a * topacity)
-    let shouldFill =
-      fillOpt.isSome and fillColor.a > 0.01'f32 and (
-        strokeOpt.isNone or strokeWeight <= 0.0'f32 or
-        (fillColor.r > 0.01'f32 or fillColor.g > 0.01'f32 or fillColor.b > 0.01'f32)
-      )
-
-    if shouldFill:
+    if fillOpt.isSome and fillColor.a > 0.01'f32:
       list.addChild(
         parentIdx,
         Fig(
