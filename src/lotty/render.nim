@@ -275,7 +275,8 @@ proc renderShapeGroup(
       max(1.0'f32, shapeData.size.x * renderScale),
       max(1.0'f32, shapeData.size.y * renderScale),
     )
-    let imagePxRange = max(1.0'f32, pxRange * renderScale)
+    #let imagePxRange = max(1.0'f32, pxRange * renderScale)
+    let imagePxRange = 4.0
     let imageId =
       if shape.ty == lstEllipse:
         ensureEllipseMtsdf(imageSize, imagePxRange)
@@ -285,8 +286,14 @@ proc renderShapeGroup(
       tcenter.x - tsize.x / 2.0'f32, tcenter.y - tsize.y / 2.0'f32, tsize.x, tsize.y
     )
 
-    if fillOpt.isSome:
-      let color = color(fillColor.r, fillColor.g, fillColor.b, fillColor.a * topacity)
+    let color = color(fillColor.r, fillColor.g, fillColor.b, fillColor.a * topacity)
+    let shouldFill =
+      fillOpt.isSome and fillColor.a > 0.01'f32 and (
+        strokeOpt.isNone or strokeWeight <= 0.0'f32 or
+        (fillColor.r > 0.01'f32 or fillColor.g > 0.01'f32 or fillColor.b > 0.01'f32)
+      )
+
+    if shouldFill:
       list.addChild(
         parentIdx,
         Fig(
@@ -304,16 +311,17 @@ proc renderShapeGroup(
     if strokeOpt.isSome and strokeWeight > 0.0'f32:
       let color =
         color(strokeColor.r, strokeColor.g, strokeColor.b, strokeColor.a * topacity)
+      echo "STROKE: ", strokeWeight, " px: ", imagePxRange, " sdThreshold: ", sdThreshold, " color: ", color
       list.addChild(
         parentIdx,
         Fig(
           kind: nkMtsdfImage,
           childCount: 0,
           zlevel: 0.ZLevel,
-          screenBox: box,
-          fill: color(0.0'f32, 0.0'f32, 0.0'f32, 0.0'f32),
+          screenBox: box + rect(-140, 40, 0, 0),
+          #fill: color(0.0'f32, 0.0'f32, 0.0'f32, 1.0'f32),
           mtsdfImage: MsdfImageStyle(
-            color: color,
+            color: color(1.0'f32, 1.0'f32, 1.0'f32, 1.0'f32),
             id: imageId,
             pxRange: imagePxRange,
             sdThreshold: sdThreshold,
