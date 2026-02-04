@@ -10,8 +10,3 @@ task test, "run unit test":
   for file in listFiles("examples"):
     if file.endsWith(".nim") and file.startsWith("t"):
       exec "nim c " & file
-
-# begin Nimble config (version 2)
-when withDir(thisDir(), system.fileExists("nimble.paths")):
-  include "nimble.paths"
-# end Nimble config

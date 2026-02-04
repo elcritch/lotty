@@ -47,7 +47,7 @@ when isMainModule:
   let anim = loadLottieFile(figDataDir() / "bouncy_ball.json")
   var lottieRenderer = initLottieMtsdfRenderer(anim)
 
-  let renderer = glrenderer.newFigRenderer(atlasSize = 1024, )
+  let renderer = glrenderer.newFigRenderer(atlasSize = 1024)
 
   when UseMetalBackend:
     let metalHandle = attachMetalLayer(window, renderer.ctx.metalDevice())
@@ -73,6 +73,18 @@ when isMainModule:
       else:
         frame
     var renders = lottieRenderer.renderLottieFrame(loopFrame + anim.ip)
+
+    ## Add a stroked copy of the ball beside the filled one.
+    let list = renders.layers[0.ZLevel]
+    if list.nodes.len > 1:
+      let filled = list.nodes[1]
+      if filled.kind == nkMtsdfImage:
+        var stroked = filled
+        stroked.fill = rgba(0, 0, 0, 0).color
+        stroked.mtsdfImage.color = rgba(24, 24, 24, 255).color
+        stroked.mtsdfImage.strokeWeight = 6.0'f32
+        stroked.screenBox.x = stroked.screenBox.x + 240.0'f32
+        discard renders.layers[0.ZLevel].addRoot(stroked)
 
     let hudMargin = 12.0'f32
     let hudW = 180.0'f32
