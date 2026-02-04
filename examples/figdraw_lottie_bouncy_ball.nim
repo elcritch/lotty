@@ -81,7 +81,7 @@ when isMainModule:
       if filled.kind == nkMtsdfImage:
         var stroked = filled
         stroked.fill = rgba(0, 0, 0, 0).color
-        stroked.mtsdfImage.color = rgba(24, 24, 24, 255).color
+        stroked.mtsdfImage.color = rgba(255, 255, 255, 255).color
         stroked.mtsdfImage.strokeWeight = 6.0'f32
         stroked.screenBox.x = stroked.screenBox.x + 240.0'f32
         discard renders.layers[0.ZLevel].addRoot(stroked)

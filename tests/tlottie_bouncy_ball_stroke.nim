@@ -2,6 +2,7 @@ import std/[os, unittest]
 
 import chroma
 import pkg/pixie
+import pkg/sdfy/msdfgen
 
 import lotty/loader
 import lotty/render
@@ -36,7 +37,7 @@ suite "lottie bouncy ball stroke":
 
     var stroke0 = node0
     stroke0.fill = rgba(0, 0, 0, 0).color
-    stroke0.mtsdfImage.color = rgba(24, 24, 24, 255).color
+    stroke0.mtsdfImage.color = rgba(255, 255, 255, 255).color
     stroke0.mtsdfImage.strokeWeight = 6.0'f32
     check stroke0.mtsdfImage.strokeWeight == 6.0'f32
 
@@ -47,7 +48,7 @@ suite "lottie bouncy ball stroke":
 
     var stroke60 = node60
     stroke60.fill = rgba(0, 0, 0, 0).color
-    stroke60.mtsdfImage.color = rgba(24, 24, 24, 255).color
+    stroke60.mtsdfImage.color = rgba(255, 255, 255, 255).color
     stroke60.mtsdfImage.strokeWeight = 6.0'f32
     check stroke60.mtsdfImage.strokeWeight == 6.0'f32
 
@@ -68,8 +69,22 @@ suite "lottie bouncy ball stroke":
               if node.kind == nkMtsdfImage:
                 var stroked = node
                 stroked.fill = rgba(0, 0, 0, 0).color
-                stroked.mtsdfImage.color = rgba(24, 24, 24, 255).color
+                stroked.mtsdfImage.color = rgba(255, 255, 255, 255).color
                 stroked.mtsdfImage.strokeWeight = 6.0'f32
+                let fieldSize = 64
+                let strokePath = newPath()
+                strokePath.ellipse(
+                  vec2(fieldSize.float32 / 2.0'f32, fieldSize.float32 / 2.0'f32),
+                  fieldSize.float32 / 2.0'f32,
+                  fieldSize.float32 / 2.0'f32,
+                )
+                let strokeMtsdf = generateMtsdfPath(
+                  strokePath, fieldSize, fieldSize, renderer.pxRange.float64
+                )
+                let strokeId = imgId("lottie:stroke:ball")
+                loadImage(strokeId, strokeMtsdf.image)
+                stroked.mtsdfImage.id = strokeId
+                stroked.mtsdfImage.pxRange = renderer.pxRange
                 renders.layers[0.ZLevel].nodes[1] = stroked
             renders,
           outputPath = outPath,
