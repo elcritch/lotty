@@ -111,6 +111,18 @@ proc parseFloatOrSeq1(raw: string): float32 =
     if values.len > 0:
       result = values[0]
 
+proc parseSeqFloatOrSingle(raw: string): seq[float32] =
+  try:
+    let value = jsony.fromJson(raw, float32)
+    result = @[value]
+  except:
+    result = jsony.fromJson(raw, seq[float32])
+
+proc parseHook*(s: string, i: var int, v: var seq[float32]) =
+  var raw: RawJson
+  parseHook(s, i, raw)
+  v = parseSeqFloatOrSingle(string(raw))
+
 proc parseHook*(s: string, i: var int, v: var LottieKeyframe[float32]) =
   type LottieKeyframeWire = object
     t*: float32
@@ -130,6 +142,17 @@ proc parseHook*(s: string, i: var int, v: var LottieKeyframe[float32]) =
   v.i = wire.i
   v.o = wire.o
   v.h = wire.h
+
+proc parseHook*(s: string, i: var int, v: var LottieBezier) =
+  type LottieBezierWire = object
+    x*: RawJson
+    y*: RawJson
+
+  var wire: LottieBezierWire
+  parseHook(s, i, wire)
+  v = default(LottieBezier)
+  v.x = parseSeqFloatOrSingle(string(wire.x))
+  v.y = parseSeqFloatOrSingle(string(wire.y))
 
 proc renameHook*(v: var LottieShape, key: var string) =
   if key == "r" and v.ty == lstFill:
