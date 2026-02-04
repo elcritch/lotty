@@ -14,7 +14,7 @@ suite "lottie bouncy ball":
 
     let renders0 = renderer.renderLottieFrame(0.0'f32)
     let list0 = renders0.layers[0.ZLevel]
-    check list0.nodes.len == 3
+    check list0.nodes.len == 4
     let node0 = list0.nodes[1]
     let node1 = list0.nodes[2]
     check node0.kind == nkMtsdfImage
