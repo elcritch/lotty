@@ -200,6 +200,7 @@ proc renderShapeGroup(
     sdThreshold: float32,
 ) =
   var fillOpt: Option[LottieShape]
+  var strokeOpt: Option[LottieShape]
   var transformOpt: Option[LottieShape]
   var shapes: seq[LottieShape]
 
@@ -209,17 +210,29 @@ proc renderShapeGroup(
       shapes.add item
     of lstFill:
       fillOpt = some(item)
+    of lstStroke:
+      strokeOpt = some(item)
     of lstTransform:
       transformOpt = some(item)
     else:
       discard
 
-  if fillOpt.isNone:
+  if fillOpt.isNone and strokeOpt.isNone:
     return
 
-  let fill = fillOpt.get
-  let fillOpacity = valueAtOr(fill.o, frame, 100.0'f32) / 100.0'f32
-  let fillColor = colorFromSeq(valueAtOr(fill.c, frame, @[]), fillOpacity)
+  var fillColor = color(0.0'f32, 0.0'f32, 0.0'f32, 0.0'f32)
+  if fillOpt.isSome:
+    let fill = fillOpt.get
+    let fillOpacity = valueAtOr(fill.o, frame, 100.0'f32) / 100.0'f32
+    fillColor = colorFromSeq(valueAtOr(fill.c, frame, @[]), fillOpacity)
+
+  var strokeColor = color(0.0'f32, 0.0'f32, 0.0'f32, 0.0'f32)
+  var strokeWeight = 0.0'f32
+  if strokeOpt.isSome:
+    let stroke = strokeOpt.get
+    let strokeOpacity = valueAtOr(stroke.o, frame, 100.0'f32) / 100.0'f32
+    strokeColor = colorFromSeq(valueAtOr(stroke.c, frame, @[]), strokeOpacity)
+    strokeWeight = valueAtOr(stroke.w, frame, 0.0'f32)
 
   var groupTransform = LottieResolvedTransform(
     anchor: vec2(0.0, 0.0),
@@ -268,24 +281,46 @@ proc renderShapeGroup(
         ensureEllipseMtsdf(imageSize, imagePxRange)
       else:
         ensurePathMtsdf(shapeData.path, imageSize, imagePxRange)
-    let color = color(fillColor.r, fillColor.g, fillColor.b, fillColor.a * topacity)
     let box = rect(
       tcenter.x - tsize.x / 2.0'f32, tcenter.y - tsize.y / 2.0'f32, tsize.x, tsize.y
     )
 
-    list.addChild(
-      parentIdx,
-      Fig(
-        kind: nkMtsdfImage,
-        childCount: 0,
-        zlevel: 0.ZLevel,
-        screenBox: box,
-        fill: color,
-        mtsdfImage: MsdfImageStyle(
-          color: color, id: imageId, pxRange: imagePxRange, sdThreshold: sdThreshold
+    if fillOpt.isSome:
+      let color = color(fillColor.r, fillColor.g, fillColor.b, fillColor.a * topacity)
+      list.addChild(
+        parentIdx,
+        Fig(
+          kind: nkMtsdfImage,
+          childCount: 0,
+          zlevel: 0.ZLevel,
+          screenBox: box,
+          fill: color,
+          mtsdfImage: MsdfImageStyle(
+            color: color, id: imageId, pxRange: imagePxRange, sdThreshold: sdThreshold
+          ),
         ),
-      ),
-    )
+      )
+
+    if strokeOpt.isSome and strokeWeight > 0.0'f32:
+      let color =
+        color(strokeColor.r, strokeColor.g, strokeColor.b, strokeColor.a * topacity)
+      list.addChild(
+        parentIdx,
+        Fig(
+          kind: nkMtsdfImage,
+          childCount: 0,
+          zlevel: 0.ZLevel,
+          screenBox: box,
+          fill: color(0.0'f32, 0.0'f32, 0.0'f32, 0.0'f32),
+          mtsdfImage: MsdfImageStyle(
+            color: color,
+            id: imageId,
+            pxRange: imagePxRange,
+            sdThreshold: sdThreshold,
+            strokeWeight: strokeWeight,
+          ),
+        ),
+      )
 
 proc initLottieMtsdfRenderer*(
     animation: LottieAnimation,

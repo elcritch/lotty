@@ -11,6 +11,7 @@ type
     lstStar
     lstPath
     lstFill
+    lstStroke
     lstTransform
 
   LottieAnimKind* = enum
@@ -58,6 +59,7 @@ type
     c*: Option[LottieProperty[seq[float32]]]
     o*: Option[LottieProperty[float32]]
     np*: Option[float32]
+    w*: Option[LottieProperty[float32]]
     points*: Option[LottieProperty[float32]]
     innerRadius*: Option[LottieProperty[float32]]
     outerRadius*: Option[LottieProperty[float32]]
@@ -188,6 +190,8 @@ proc parseHook*(s: string, i: var int, v: var LottieShapeType) =
     v = lstPath
   of "fl":
     v = lstFill
+  of "st":
+    v = lstStroke
   of "tr":
     v = lstTransform
   else:

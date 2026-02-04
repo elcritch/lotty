@@ -13,6 +13,8 @@ import figdraw/commons
 import figdraw/common/fonttypes
 import figdraw/fignodes
 import figdraw/figrender as glrenderer
+import pkg/pixie
+import pkg/sdfy/msdfgen
 import lotty/loader
 import lotty/render
 
@@ -81,8 +83,22 @@ when isMainModule:
       if filled.kind == nkMtsdfImage:
         var stroked = filled
         stroked.fill = rgba(0, 0, 0, 0).color
-        stroked.mtsdfImage.color = rgba(255, 255, 255, 255).color
+        stroked.mtsdfImage.color = rgba(24, 24, 24, 255).color
         stroked.mtsdfImage.strokeWeight = 6.0'f32
+        let fieldSize = 64
+        let strokePath = newPath()
+        strokePath.ellipse(
+          vec2(fieldSize.float32 / 2.0'f32, fieldSize.float32 / 2.0'f32),
+          fieldSize.float32 / 2.0'f32,
+          fieldSize.float32 / 2.0'f32,
+        )
+        let strokeMtsdf = generateMtsdfPath(
+          strokePath, fieldSize, fieldSize, lottieRenderer.pxRange.float64
+        )
+        let strokeId = imgId("lottie:stroke:ball")
+        loadImage(strokeId, strokeMtsdf.image)
+        stroked.mtsdfImage.id = strokeId
+        stroked.mtsdfImage.pxRange = lottieRenderer.pxRange
         stroked.screenBox.x = stroked.screenBox.x + 240.0'f32
         discard renders.layers[0.ZLevel].addRoot(stroked)
 

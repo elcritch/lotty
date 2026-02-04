@@ -14,10 +14,13 @@ suite "lottie bouncy ball":
 
     let renders0 = renderer.renderLottieFrame(0.0'f32)
     let list0 = renders0.layers[0.ZLevel]
-    check list0.nodes.len == 2
+    check list0.nodes.len == 3
     let node0 = list0.nodes[1]
+    let node1 = list0.nodes[2]
     check node0.kind == nkMtsdfImage
+    check node1.kind == nkMtsdfImage
     check hasImage(node0.mtsdfImage.id)
+    check hasImage(node1.mtsdfImage.id)
     check abs(node0.screenBox.x - 158.5'f32) < 0.5'f32
     check abs(node0.screenBox.y - 29.5'f32) < 0.5'f32
     check abs(node0.screenBox.w - 153.0'f32) < 0.5'f32
