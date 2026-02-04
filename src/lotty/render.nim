@@ -291,7 +291,7 @@ proc initLottieMtsdfRenderer*(
     animation: LottieAnimation,
     pxRange: float32 = 4.0'f32,
     sdThreshold: float32 = 0.5'f32,
-    maxSdfSize: float32 = 64.0'f32,
+    maxSdfSize: float32 = 48.0'f32,
 ): LottieMtsdfRenderer =
   LottieMtsdfRenderer(
     animation: animation,
