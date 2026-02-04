@@ -311,17 +311,15 @@ proc renderShapeGroup(
     if strokeOpt.isSome and strokeWeight > 0.0'f32:
       let color =
         color(strokeColor.r, strokeColor.g, strokeColor.b, strokeColor.a * topacity)
-      echo "STROKE: ", strokeWeight, " px: ", imagePxRange, " sdThreshold: ", sdThreshold, " color: ", color
       list.addChild(
         parentIdx,
         Fig(
           kind: nkMtsdfImage,
           childCount: 0,
           zlevel: 0.ZLevel,
-          screenBox: box + rect(-140, 40, 0, 0),
-          #fill: color(0.0'f32, 0.0'f32, 0.0'f32, 1.0'f32),
+          screenBox: box,
           mtsdfImage: MsdfImageStyle(
-            color: color(1.0'f32, 1.0'f32, 1.0'f32, 1.0'f32),
+            color: color,
             id: imageId,
             pxRange: imagePxRange,
             sdThreshold: sdThreshold,
