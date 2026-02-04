@@ -47,7 +47,7 @@ when isMainModule:
   let anim = loadLottieFile(figDataDir() / "bouncy_ball.json")
   var lottieRenderer = initLottieMtsdfRenderer(anim)
 
-  let renderer = glrenderer.newFigRenderer(atlasSize = 1024, )
+  let renderer = glrenderer.newFigRenderer(atlasSize = 1024)
 
   when UseMetalBackend:
     let metalHandle = attachMetalLayer(window, renderer.ctx.metalDevice())
@@ -73,6 +73,8 @@ when isMainModule:
       else:
         frame
     var renders = lottieRenderer.renderLottieFrame(loopFrame + anim.ip)
+
+    ## Two balls are defined directly in data/bouncy_ball.json
 
     let hudMargin = 12.0'f32
     let hudW = 180.0'f32
