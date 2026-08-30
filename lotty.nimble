@@ -10,5 +10,4 @@ requires "nim >= 2.0.10"
 requires "pixie >= 5.0.1"
 requires "chroma >= 0.2.7"
 requires "jsony"
-requires "https://github.com/elcritch/figdraw[windy] >= 0.16"
-
+requires "figdraw >= 0.35.2 [windy]"
