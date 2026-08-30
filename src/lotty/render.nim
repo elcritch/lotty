@@ -297,7 +297,7 @@ proc renderShapeGroup(
           screenBox: box,
           fill: color,
           mtsdfImage: MsdfImageStyle(
-            color: color, id: imageId, pxRange: imagePxRange, sdThreshold: sdThreshold
+            fill: color, id: imageId, pxRange: imagePxRange, sdThreshold: sdThreshold
           ),
         ),
       )
@@ -313,7 +313,7 @@ proc renderShapeGroup(
           zlevel: 0.ZLevel,
           screenBox: box,
           mtsdfImage: MsdfImageStyle(
-            color: color,
+            fill: color,
             id: imageId,
             pxRange: imagePxRange,
             sdThreshold: sdThreshold,
